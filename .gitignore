@@ -1,4 +1,4 @@
 .env
-.prefect.yaml
+prefect.yaml
 .__pycache__
 .prefectignore
