@@ -19,7 +19,7 @@ pull:
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
-- name: Daily Bournemouth Weather ETL
+- name: daily-bournemouth-weather
   version: null
   tags: []
   concurrency_limit: null
@@ -31,7 +31,7 @@ deployments:
     work_queue_name: null
     job_variables: {}
   schedules:
-  - cron: 0 * * * *
+  - cron: 0 8 * * *
     timezone: GMT
     day_or: true
     active: true

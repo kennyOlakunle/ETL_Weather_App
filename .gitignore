@@ -1,4 +1,4 @@
 .env
-.prefect.yaml
-.__pycache__
-.prefectignore
+*.log
+__pycache__/
+*.pyc
