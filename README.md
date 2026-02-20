@@ -33,8 +33,6 @@ This project demonstrates core Data Engineering skills: reliable data ingestion,
 ### Docker Worker Running
 ![Docker Worker Logs](screenshots/docker_worker_logs.png)
 
-*(Add your own screenshots in a `screenshots/` folder and update the image paths accordingly.)*
-
 ## Tech Stack
 
 | Layer               | Technology                     | Purpose                                  |
