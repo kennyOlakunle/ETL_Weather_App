@@ -62,6 +62,7 @@ CREATE TABLE weather_data (
     description VARCHAR(255),
     data_quality VARCHAR(50)
 );
+```
 
 Replace `YOUR-USERNAME` with your actual GitHub username. 
 
