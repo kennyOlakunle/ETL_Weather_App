@@ -62,9 +62,6 @@ CREATE TABLE weather_data (
     description VARCHAR(255),
     data_quality VARCHAR(50)
 );
-```
-
-Replace `YOUR-USERNAME` with your actual GitHub username. 
 
 ## Architecture & Tech Stack
 
@@ -149,7 +146,7 @@ Replace `YOUR-USERNAME` with your actual GitHub username.
 ### Steps
 
 1. Clone repo
-   ```bash
+```
    git clone https://github.com/YOUR-USERNAME/weather-etl-pipeline.git
    cd weather-etl-pipeline
-
+```
