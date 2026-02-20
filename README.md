@@ -63,6 +63,8 @@ CREATE TABLE weather_data (
     data_quality VARCHAR(50)
 );
 
+```
+
 ## Architecture & Tech Stack
 
 ### High-Level Flow
