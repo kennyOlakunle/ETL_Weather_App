@@ -161,8 +161,11 @@ Introduction
 As part of my career transition from Data Science to Data Engineering, I built this end-to-end ETL pipeline project to gain hands-on experience with core DE concepts. The project was inspired by my need to quickly learn ETL processes, orchestration, database integration, scheduling, and containerization, while showcasing a deployable portfolio piece for DE job applications.
 This design system document provides a comprehensive overview of the architecture, components, function flow, data flow, and design decisions for the Weather ETL Pipeline project.
 The design emphasizes reliability, modularity, observability, and ease of deployment, drawing from the challenges faced during development (e.g., database connections, Docker networking, orchestration backlogs). All design choices were refined through iterative troubleshooting, ensuring the system is production-ready for local execution with potential for cloud scaling.
+
 **Project Goal**: Build a simple ETL pipeline that fetches daily weather data from OpenWeatherMap API, transforms it, loads it into Supabase (PostgreSQL), orchestrates with Prefect 3, and deploys in Docker — all while learning DE fundamentals and overcoming real-world hurdles.
+
 **My Role**: Solo developer, implementing code, debugging errors, and iterating.
+
 **Outcome**: A working, automated pipeline running locally in containers, ready for cloud extension. This project helped me understand DE vs. DS (focus on reliability, scalability, automation).
 
 ### 1. System Architecture
