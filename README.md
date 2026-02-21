@@ -152,3 +152,41 @@ CREATE TABLE weather_data (
    git clone https://github.com/YOUR-USERNAME/weather-etl-pipeline.git
    cd weather-etl-pipeline
 ```
+
+
+## Weather ETL Pipeline Design System
+
+This design system document provides a comprehensive overview of the architecture, components, function flow, data flow, and design decisions for the Weather ETL Pipeline project. It is intended to be added to my portfolio as a standalone section or appendix, showcasing how I designed a robust, scalable, and maintainable data pipeline during my transition from Data Science to Data Engineering.
+The design emphasizes reliability, modularity, observability, and ease of deployment, drawing from the challenges faced during development (e.g., database connections, Docker networking, orchestration backlogs). All design choices were refined through iterative troubleshooting, ensuring the system is production-ready for local execution with potential for cloud scaling.
+
+### 1. System Architecture
+
+#### High-Level Overview
+The system is a batch ETL pipeline that runs on a configurable schedule (e.g., daily). It ingests raw weather data from an external API, processes it for quality and usability, stores it in a relational database, and is orchestrated in a containerized environment.
+
+- Input: OpenWeatherMap API (JSON response)
+- Processing: Python-based ETL logic with Prefect orchestration
+- Output: Structured records in Supabase PostgreSQL table
+- Deployment: Local Docker containers for flow execution and worker
+
+#### Key Components
+
+- Data Source: OpenWeatherMap API – Provides real-time weather data (temp, humidity, description) via HTTP GET. Chosen for free tier and structured output.
+- ETL Layer: Python scripts with tasks for extract, transform, load. Uses pandas for transformation efficiency.
+- Database: Supabase (hosted PostgreSQL) – Relational storage for time-series data. Table schema supports querying by date/city.
+- Orchestration: Prefect 3 – Handles task dependencies, retries (e.g., 3 on load), logging, and scheduling. Local server provides UI for monitoring.
+- Containerization: Docker – Two images: one for single flow runs, one for persistent worker. Ensures consistency across environments.
+- Secrets Management: .env file – Stores API keys and DB credentials securely.
+
+
+### Function Flow & Data Flow
+####Function Flow Diagram (Mermaid)
+
+- Extract: Fetches JSON, handles HTTP errors, returns Pandas DF. Flow: API call → JSON parse → DF creation.
+- Transform: Input DF → cleaning (dropna, round) → derived columns (temp_celsius, data_quality) → output DF.
+- Load: Input DF → DB connection → row-by-row INSERT (with ON CONFLICT) → commit/rollback on error.
+- Error Flow: Tasks retry on failure (e.g., network/API error). Full flow logs to Prefect UI.
+
+![unction Flow Diagram (Mermaid)](mermaid-diagram.svg)
+
+_*Function Flow Diagram (Mermaid)*git _
