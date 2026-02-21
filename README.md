@@ -155,10 +155,15 @@ CREATE TABLE weather_data (
 ```
 
 
-## Weather ETL Pipeline Design System
+## Data Engineering Portfolio: Weather ETL Pipeline Project
 
-This design system document provides a comprehensive overview of the architecture, components, function flow, data flow, and design decisions for the Weather ETL Pipeline project. It is intended to be added to my portfolio as a standalone section or appendix, showcasing how I designed a robust, scalable, and maintainable data pipeline during my transition from Data Science to Data Engineering.
+Introduction
+As part of my career transition from Data Science to Data Engineering, I built this end-to-end ETL pipeline project to gain hands-on experience with core DE concepts. The project was inspired by my need to quickly learn ETL processes, orchestration, database integration, scheduling, and containerization, while showcasing a deployable portfolio piece for DE job applications.
+This design system document provides a comprehensive overview of the architecture, components, function flow, data flow, and design decisions for the Weather ETL Pipeline project.
 The design emphasizes reliability, modularity, observability, and ease of deployment, drawing from the challenges faced during development (e.g., database connections, Docker networking, orchestration backlogs). All design choices were refined through iterative troubleshooting, ensuring the system is production-ready for local execution with potential for cloud scaling.
+**Project Goal**: Build a simple ETL pipeline that fetches daily weather data from OpenWeatherMap API, transforms it, loads it into Supabase (PostgreSQL), orchestrates with Prefect 3, and deploys in Docker — all while learning DE fundamentals and overcoming real-world hurdles.
+**My Role**: Solo developer, implementing code, debugging errors, and iterating.
+**Outcome**: A working, automated pipeline running locally in containers, ready for cloud extension. This project helped me understand DE vs. DS (focus on reliability, scalability, automation).
 
 ### 1. System Architecture
 
@@ -241,3 +246,51 @@ These influenced the design to prioritize robustness.
 - Cloud: Deploy worker to Railway
 - Alerts: Prefect notifications on failure
 - Validation: Add post-load checks
+
+## Step-by-Step Guide: How I Built the Project
+
+This guide recreates the journey from chat, including code snippets and key decisions.
+
+#### Step 1: Environment Setup
+
+- Installed Python libraries: `pip install requests pandas psycopg2-binary schedule python-dotenv prefect`
+- Signed up for OpenWeatherMap API key (free tier).
+- Created Supabase project, noted connection string, created `weather_data` table (SQL above).
+- Learned: DE tools focus on reliability (e.g., psycopg2 for DB connections).
+
+Trouble: Multiple DB connection attempts failed due to tenant/user errors. Resolved by using transaction mode and correct string.
+
+#### Step 2: Extract Data (API Fetch)
+Code in `etl_weather.py`:
+
+```
+import requests
+from datetime import datetime, timezone
+
+@task(retries=2, retry_delay_seconds=30)
+def extract_weather_task():
+    # ... (logger setup)
+    params = {"q": CITY, "appid": API_KEY, "units": "metric"}
+    response = requests.get("https://api.openweathermap.org/data/2.5/weather", params=params)
+    # ... (handle response, create DF)
+    return df
+
+```
+
+**Learned**: Handling API errors, rate limits.
+
+#### Step 3: Transform Data
+Code:
+
+```
+
+@task
+def transform_weather_task(raw_df):
+    df = raw_df.copy()
+    df["temp_kelvin"] = df["temp_celsius"] + 273.15
+    df["temp_celsius"] = df["temp_celsius"].round(2)
+    # ... (quality flag)
+    return df
+
+```
+
