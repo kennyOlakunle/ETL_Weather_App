@@ -180,8 +180,8 @@ The system is a batch ETL pipeline that runs on a configurable schedule (e.g., d
 - Secrets Management: .env file – Stores API keys and DB credentials securely.
 
 
-### Function Flow & Data Flow
-####Function Flow Diagram (Mermaid)
+### 2. Function Flow & Data Flow
+#### Function Flow Diagram (Mermaid)
 
 - Extract: Fetches JSON, handles HTTP errors, returns Pandas DF. Flow: API call → JSON parse → DF creation.
 - Transform: Input DF → cleaning (dropna, round) → derived columns (temp_celsius, data_quality) → output DF.
