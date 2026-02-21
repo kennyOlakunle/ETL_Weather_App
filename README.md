@@ -188,6 +188,56 @@ The system is a batch ETL pipeline that runs on a configurable schedule (e.g., d
 - Load: Input DF → DB connection → row-by-row INSERT (with ON CONFLICT) → commit/rollback on error.
 - Error Flow: Tasks retry on failure (e.g., network/API error). Full flow logs to Prefect UI.
 
+#### Data Flow
+
+Raw: JSON {temp (Kelvin), humidity, description}
+Transformed: DF with temp_celsius, rounded values, quality flag ("Good" if humidity 20–100%)
+Loaded: SQL rows with TIMESTAMP, VARCHAR, FLOAT, INTEGER columns
+Volume: ~1 row per run (daily) – scalable to multiple cities
+
 ![unction Flow Diagram (Mermaid)](mermaid-diagram.svg)
 
 _*Function Flow Diagram (Mermaid)*_
+
+
+### 3. Design Decisions & Rationale
+
+#### Modularity
+- Tasks are separate functions for easy testing/reuse (e.g., extract can be run independently).
+- Rationale: From troubleshooting, modular code helped isolate issues (e.g., DB only).
+
+#### Reliability
+- Retries on tasks (2 on extract for API flakiness, 3 on load for DB transients)
+- Error handling: try/except + logging in each task
+- Rationale: API/DB connections failed often during dev — this ensures production stability.
+
+#### Scalability
+- Prefect supports dynamic mapping for multi-city (future extension)
+- Docker images allow easy scaling to cloud (e.g., Kubernetes)
+- Rationale: Started simple but designed for growth, based on chat advice.
+
+#### Security
+- .env for secrets, ignored in Git
+- No hard-coded credentials
+- Rationale: Learned from env loading errors — secure from day 1.
+
+#### Observability
+- Prefect UI for flow graphs, run states, logs
+- Custom logger in tasks
+- Rationale: Essential for debugging backlogs/late runs.
+
+### 4. Challenges & Resolutions in Design
+
+- DB Connectivity: Initial design assumed simple connect — redesigned for pooler modes after errors.
+- Scheduling: Daily cron, but backlogs from worker downtime → added pause/cancel mechanisms.
+- Docker Networking: Host mode failed on macOS — redesigned with host.docker.internal.
+- Deprecations: Updated datetime handling in transform function.
+File Management: Refined requirements.txt after build failures.
+
+These influenced the design to prioritize robustness.
+
+### 5. Future Enhancements
+- Multi-city: Prefect mapping over city list
+- Cloud: Deploy worker to Railway
+- Alerts: Prefect notifications on failure
+- Validation: Add post-load checks
