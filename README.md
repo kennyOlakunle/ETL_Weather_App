@@ -1,6 +1,7 @@
 # Weather ETL Pipeline – Daily Automated Data Ingestion & Orchestration
 
-![Project Banner](screenshots/banner.png) 
+![Project Banner](mermaid-diagram.svg)
+
 
 A complete, production-ready **end-to-end ETL pipeline** built during my career transition from Data Science to Data Engineering.
 
@@ -189,4 +190,4 @@ The system is a batch ETL pipeline that runs on a configurable schedule (e.g., d
 
 ![unction Flow Diagram (Mermaid)](mermaid-diagram.svg)
 
-_*Function Flow Diagram (Mermaid)*git _
+<center>Function Flow Diagram (Mermaid)</center>
