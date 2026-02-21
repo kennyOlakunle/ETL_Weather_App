@@ -190,4 +190,4 @@ The system is a batch ETL pipeline that runs on a configurable schedule (e.g., d
 
 ![unction Flow Diagram (Mermaid)](mermaid-diagram.svg)
 
-<center>Function Flow Diagram (Mermaid)</center>
+_*Function Flow Diagram (Mermaid)*_
