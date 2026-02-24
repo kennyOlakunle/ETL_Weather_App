@@ -162,7 +162,7 @@ As part of my career transition from Data Science to Data Engineering, I built t
 This design system document provides a comprehensive overview of the architecture, components, function flow, data flow, and design decisions for the Weather ETL Pipeline project.
 The design emphasizes reliability, modularity, observability, and ease of deployment, drawing from the challenges faced during development (e.g., database connections, Docker networking, orchestration backlogs). All design choices were refined through iterative troubleshooting, ensuring the system is production-ready for local execution with potential for cloud scaling.
 
-**Project Goal**: Build a simple ETL pipeline that fetches daily weather data from OpenWeatherMap API, transforms it, loads it into Supabase (PostgreSQL), orchestrates with Prefect 3, and deploys in Docker — all while learning DE fundamentals and overcoming real-world hurdles.
+**Project Goal**: Build a simple ETL pipeline that fetches daily weather data from OpenWeatherMap API, transforms it, loads it into Supabase (PostgreSQL), orchestrates with Prefect 3, and deploys in Docker.
 
 **My Role**: Solo developer, implementing code, debugging errors, and iterating.
 
@@ -252,48 +252,151 @@ These influenced the design to prioritize robustness.
 
 ## Step-by-Step Guide: How I Built the Project
 
-This guide recreates the journey from chat, including code snippets and key decisions.
+This is the exact path I followed to move from idea to a working, scheduled pipeline.
 
-#### Step 1: Environment Setup
+#### Step 1: Set Up the Local Environment
 
-- Installed Python libraries: `pip install requests pandas psycopg2-binary schedule python-dotenv prefect`
-- Signed up for OpenWeatherMap API key (free tier).
-- Created Supabase project, noted connection string, created `weather_data` table (SQL above).
-- Learned: DE tools focus on reliability (e.g., psycopg2 for DB connections).
+1. Cloned the project and created a virtual environment.
+2. Installed dependencies from `requirements.txt`.
+3. Created a `.env` file with API and database credentials.
 
-Trouble: Multiple DB connection attempts failed due to tenant/user errors. Resolved by using transaction mode and correct string.
-
-#### Step 2: Extract Data (API Fetch)
-Code in `etl_weather.py`:
-
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
-import requests
-from datetime import datetime, timezone
 
+`.env` keys used by the code:
+
+```env
+OPENWEATHER_API_KEY=your_api_key_here
+DATABASE_URL=your_supabase_transaction_pooler_url
+```
+
+#### Step 2: Create and Verify the Database
+
+1. Created `weather_data` table in Supabase SQL Editor (schema shown earlier in this README).
+2. Confirmed connectivity with `test_db.py`.
+
+```bash
+python test_db.py
+```
+
+If successful, the script prints a confirmation message.  
+Main issue I hit here was connection failures from an incorrect pooler mode/credentials; switching to the transaction pooler URL fixed it.
+
+#### Step 3: Build the Extract Task
+
+I built `extract_weather_task()` in `etl_weather.py` to fetch Bournemouth weather from OpenWeatherMap and return a one-row DataFrame.
+
+```python
 @task(retries=2, retry_delay_seconds=30)
 def extract_weather_task():
-    # ... (logger setup)
     params = {"q": CITY, "appid": API_KEY, "units": "metric"}
-    response = requests.get("https://api.openweathermap.org/data/2.5/weather", params=params)
-    # ... (handle response, create DF)
-    return df
-
+    response = requests.get(base_url, params=params, timeout=10)
+    response.raise_for_status()
+    # Parse JSON and return DataFrame
 ```
 
-**Learned**: Handling API errors, rate limits.
+Key decision: use retries + timeout so temporary API/network issues do not kill the pipeline on first failure.
 
-#### Step 3: Transform Data
-Code:
+#### Step 4: Build the Transform Task
 
-```
+I added `transform_weather_task()` to clean and enrich data:
+- Normalized city text
+- Computed data quality flag from humidity range
+- Returned a transformed DataFrame ready for loading
 
-@task
+```python
+@task(retries=1, retry_delay_seconds=10)
 def transform_weather_task(raw_df):
     df = raw_df.copy()
-    df["temp_kelvin"] = df["temp_celsius"] + 273.15
-    df["temp_celsius"] = df["temp_celsius"].round(2)
-    # ... (quality flag)
+    df["city"] = df["city"].str.title()
+    df["data_quality"] = df["humidity"].apply(
+        lambda h: "Good" if 20 <= h <= 100 else "Suspicious"
+    )
     return df
-
 ```
 
+#### Step 5: Build the Load Task
+
+I wrote `load_to_supabase_task()` with `psycopg2` to insert rows into `weather_data`.
+
+```python
+@task(retries=3, retry_delay_seconds=60)
+def load_to_supabase_task(df):
+    conn = psycopg2.connect(DB_URL)
+    cur = conn.cursor()
+    cur.execute(insert_query, (...))
+    conn.commit()
+```
+
+Key decisions:
+- Added retries for transient DB failures.
+- Used commit/rollback and `finally` cleanup for reliability.
+
+#### Step 6: Orchestrate with a Prefect Flow
+
+I wrapped tasks in one flow:
+
+```python
+@flow(name="Daily Bournemouth Weather ETL", log_prints=True)
+def daily_weather_etl():
+    raw_data = extract_weather_task()
+    transformed_data = transform_weather_task(raw_data)
+    load_to_supabase_task(transformed_data)
+```
+
+Then I validated end-to-end execution locally:
+
+```bash
+python etl_weather.py
+```
+
+#### Step 7: Add Scheduling with Prefect
+
+I configured deployment in `prefect.yaml`:
+- Entrypoint: `etl_weather.py:daily_weather_etl`
+- Work pool: `local-process`
+- Schedule: `0 8 * * *` (daily, 8:00 AM GMT)
+
+Typical commands:
+
+```bash
+prefect server start
+prefect deploy
+prefect worker start --pool local-process
+```
+
+#### Step 8: Containerize Runner and Worker
+
+I created two Docker images:
+- `Dockerfile` for running the ETL script
+- `worker.Dockerfile` for running a persistent Prefect worker
+
+```bash
+docker build -t weather-etl-flow -f Dockerfile .
+docker build -t weather-etl-worker -f worker.Dockerfile .
+```
+
+Example runs:
+
+```bash
+docker run --rm --env-file .env weather-etl-flow
+docker run --rm --env-file .env -e PREFECT_API_URL=http://host.docker.internal:4200/api weather-etl-worker
+```
+
+#### Step 9: Validate Output and Monitor Runs
+
+1. Checked flow states and logs in Prefect UI.
+2. Queried Supabase table to confirm inserts.
+3. Re-ran after failures to verify retries and error handling worked as expected.
+
+```sql
+SELECT date, city, temp_celsius, humidity, description
+FROM weather_data
+ORDER BY date DESC
+LIMIT 20;
+```
+
+This final version gives a reliable, scheduled, observable ETL pipeline with clear separation of extract, transform, and load stages.
