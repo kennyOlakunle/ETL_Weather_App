@@ -385,18 +385,3 @@ Example runs:
 docker run --rm --env-file .env weather-etl-flow
 docker run --rm --env-file .env -e PREFECT_API_URL=http://host.docker.internal:4200/api weather-etl-worker
 ```
-
-#### Step 9: Validate Output and Monitor Runs
-
-1. Checked flow states and logs in Prefect UI.
-2. Queried Supabase table to confirm inserts.
-3. Re-ran after failures to verify retries and error handling worked as expected.
-
-```sql
-SELECT date, city, temp_celsius, humidity, description
-FROM weather_data
-ORDER BY date DESC
-LIMIT 20;
-```
-
-This final version gives a reliable, scheduled, observable ETL pipeline with clear separation of extract, transform, and load stages.
